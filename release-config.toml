@@ -1,0 +1,8 @@
+address = "0.0.0.0:8030"
+image_folder = "images/"
+
+[database]
+name = { path = "/run/secrets/POSTGRES_DB" }
+username = { path = "/run/secrets/POSTGRES_USER" }
+password = { path = "/run/secrets/POSTGRES_PASSWORD" }
+address = { value = "database:5432" }
