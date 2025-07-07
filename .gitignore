@@ -2,4 +2,4 @@ target/
 config.toml
 .idea/
 .env
-
+.auth

@@ -10,6 +10,7 @@ use std::path::PathBuf;
 use futures::executor::block_on;
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
+use backend::authorization::Authorization;
 
 const DEFAULT_CONFIG: &str = "./config.toml";
 
@@ -40,6 +41,8 @@ fn main() -> Result<()> {
     let config = parse_args_into_config(args)?;
     simple_logger::init_with_level(config.log_level)?;
 
+    let auth = Authorization::new(config.auth_file.clone());
+
     let listener = TcpListener::bind(&config.address)?;
     log::info!("Bound TcpListener to {}", config.address);
     let db_pool = block_on(create_db_connection(&config))?;
@@ -49,7 +52,7 @@ fn main() -> Result<()> {
         log::info!("Incoming connection");
         match stream {
             Ok(stream) => {
-                match handle_connection(stream, &config, &db_pool) {
+                match handle_connection(stream, &config, &db_pool, &auth) {
                     Ok(_) => { log::info!("Successfully handled connection"); },
                     Err(err) => { log::error!("Error handling connection - {}", err); }
                 }
@@ -61,7 +64,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn handle_connection(stream: TcpStream, config: &Config, db_pool: &PgPool) -> Result<()> {
+fn handle_connection(stream: TcpStream, config: &Config, db_pool: &PgPool, auth: &Authorization) -> Result<()> {
     let mut http = HttpCodec::new(stream)?;
 
     let request = http.receive_request();
@@ -69,7 +72,7 @@ fn handle_connection(stream: TcpStream, config: &Config, db_pool: &PgPool) -> Re
     let response = match request {
         Ok(request) => {
             log::info!("Routing request '{}'", request.uri());
-            route_request(request, config, db_pool)
+            route_request(request, config, db_pool, auth)
         },
         Err(err) => {
             log::error!("Error receiving request - {}", err);
@@ -83,7 +86,7 @@ fn handle_connection(stream: TcpStream, config: &Config, db_pool: &PgPool) -> Re
     Ok(())
 }
 
-fn route_request(request: Request<Vec<u8>>, config: &Config, db_pool: &PgPool) -> Response<Vec<u8>> {
+fn route_request(request: Request<Vec<u8>>, config: &Config, db_pool: &PgPool, auth: &Authorization) -> Response<Vec<u8>> {
     if image::can_handle_request(&request) {
         log::debug!("Routing request to image");
         return image::handle_request(request, config).unwrap()
@@ -136,7 +139,9 @@ fn config_from_file_and_args(config: ConfigFile, args: Args) -> Result<Config> {
         None => config.verbose.unwrap_or(log::Level::Info),
     };
 
-    Ok(Config { address, image_folder, database, log_level })
+    let auth_file = config.auth_file.unwrap_or_else(|| PathBuf::from(".auth"));
+
+    Ok(Config { address, image_folder, database, log_level, auth_file })
 }
 
 async fn create_db_connection(config: &Config) -> anyhow::Result<PgPool> {

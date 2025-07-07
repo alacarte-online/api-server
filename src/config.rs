@@ -10,6 +10,7 @@ pub struct Config {
     pub image_folder: PathBuf,
     pub database: database::DatabaseConfig,
     pub log_level: log::Level,
+    pub auth_file: PathBuf,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -18,6 +19,7 @@ pub struct ConfigFile {
     pub image_folder: Option<PathBuf>,
     pub database: database::ConfigFileDatabaseTable,
     pub verbose: Option<log::Level>,
+    pub auth_file: Option<PathBuf>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
