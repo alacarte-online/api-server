@@ -15,3 +15,7 @@ pub fn not_found_response() -> Response<Vec<u8>> {
 pub fn method_not_allowed_response() -> Response<Vec<u8>> {
     http::Response::builder().status(http::status::StatusCode::METHOD_NOT_ALLOWED).body(Vec::new()).expect("error building method not allowed response")
 }
+
+pub fn unauthorized_response() -> Response<Vec<u8>> {
+    http::Response::builder().status(http::status::StatusCode::UNAUTHORIZED).body(Vec::new()).expect("error building unauthorized response")
+}
