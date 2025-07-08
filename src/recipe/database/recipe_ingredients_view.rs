@@ -3,7 +3,7 @@ use serde::Serialize;
 use sqlx::PgPool;
 
 #[derive(Debug, Serialize)]
-pub struct RecipeIngredients {
+pub struct RecipeIngredientsView {
     pub recipe_id: i64,
     pub ingredient_id: i64,
     pub recipe_name: String,
@@ -12,7 +12,7 @@ pub struct RecipeIngredients {
 }
 
 #[derive(Debug, Serialize)]
-pub struct RecipeIngredientsViewItem {
+struct RecipeIngredientsViewItem {
     pub recipe_id: Option<i64>,
     pub ingredient_id: Option<i64>,
     pub recipe_name: Option<String>,
@@ -20,7 +20,7 @@ pub struct RecipeIngredientsViewItem {
     pub amount: Option<String>
 }
 
-impl TryFrom<RecipeIngredientsViewItem> for RecipeIngredients {
+impl TryFrom<RecipeIngredientsViewItem> for RecipeIngredientsView {
     type Error = anyhow::Error;
     fn try_from(value: RecipeIngredientsViewItem) -> Result<Self, Self::Error> {
         let recipe_id = match value.recipe_id {
@@ -44,7 +44,7 @@ impl TryFrom<RecipeIngredientsViewItem> for RecipeIngredients {
             None => bail!("RecipeIngredientsViewItem missing amount"),
         };
 
-        Ok(RecipeIngredients {
+        Ok(RecipeIngredientsView {
             recipe_id,
             ingredient_id,
             recipe_name,
@@ -54,7 +54,7 @@ impl TryFrom<RecipeIngredientsViewItem> for RecipeIngredients {
     }
 }
 
-impl RecipeIngredients {
+impl RecipeIngredientsView {
     pub async fn fetch_from_recipe_id(db_pool: &PgPool, recipe_id: i64) -> anyhow::Result<Vec<Self>> {
         let recipe_ingredients = sqlx::query_as!(RecipeIngredientsViewItem, "SELECT * FROM recipe_ingredients_list WHERE recipe_id = $1;", recipe_id).fetch_all(db_pool).await?;
         let mut recipe_ingredients_vec = vec![];

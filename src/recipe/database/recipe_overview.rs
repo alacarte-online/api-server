@@ -3,30 +3,43 @@ use serde::Serialize;
 use sqlx::PgPool;
 
 #[derive(Debug, Serialize)]
-pub struct RecipeDetails {
+pub struct RecipeOverview {
     pub recipe_id: i64,
     pub recipe_name: String,
     pub brief_description: String,
-    pub method: String,
     pub image_uri: String,
     pub user_id: i64,
     pub user_name: String,
 }
 
 #[derive(Debug, Serialize)]
-pub struct RecipeDetailsViewItem {
+struct RecipeOverviewViewItem {
     pub recipe_id: Option<i64>,
     pub recipe_name: Option<String>,
     pub brief_description: Option<String>,
-    pub method: Option<String>,
     pub image_uri: Option<String>,
     pub user_id: Option<i64>,
     pub user_name: Option<String>,
 }
 
-impl TryFrom<RecipeDetailsViewItem> for RecipeDetails {
+impl RecipeOverview {
+    pub async fn get_all_recipe_overviews(db_pool: &PgPool) -> anyhow::Result<Vec<RecipeOverview>> {
+        let recipes = sqlx::query_as!(RecipeOverviewViewItem, "SELECT * FROM recipe_overviews;").fetch_all(db_pool).await?;
+        let mut recipe_vec = vec![];
+        for recipe in recipes {
+            match recipe.try_into() {
+                Ok(recipe) => recipe_vec.push(recipe),
+                Err(err) => println!("{}", err)
+            }
+        }
+        Ok(recipe_vec)
+    }
+}
+
+impl TryFrom<RecipeOverviewViewItem> for RecipeOverview {
     type Error = anyhow::Error;
-    fn try_from(value: RecipeDetailsViewItem) -> Result<Self, Self::Error> {
+
+    fn try_from(value: RecipeOverviewViewItem) -> Result<Self, Self::Error> {
         let recipe_id = match value.recipe_id {
             Some(id) => id,
             None => bail!("RecipeOverviewViewItem missing recipe_id"),
@@ -38,10 +51,6 @@ impl TryFrom<RecipeDetailsViewItem> for RecipeDetails {
         let brief_description = match value.brief_description {
             Some(description) => description,
             None => bail!("RecipeOverviewViewItem missing brief_description"),
-        };
-        let method = match value.method {
-            Some(method) => method,
-            None => bail!("RecipeOverviewViewItem missing method"),
         };
         let image_uri = match value.image_uri {
             Some(image) => image,
@@ -56,25 +65,13 @@ impl TryFrom<RecipeDetailsViewItem> for RecipeDetails {
             None => bail!("RecipeOverviewViewItem missing user_name"),
         };
 
-        Ok(RecipeDetails {
+        Ok(RecipeOverview {
             recipe_id,
             recipe_name,
             brief_description,
-            method,
             image_uri,
             user_id,
             user_name
         })
-    }
-}
-
-impl RecipeDetails {
-    pub async fn fetch_from_recipe_id(db_pool: &PgPool, recipe_id: i64) -> anyhow::Result<Option<Self>> {
-        let recipe_details = sqlx::query_as!(RecipeDetailsViewItem, "SELECT * FROM recipe_details WHERE recipe_id = $1;", recipe_id).fetch_optional(db_pool).await?;
-        let recipe_details: Option<RecipeDetails> = match recipe_details {
-            Some(recipe) => Some(recipe.try_into()?),
-            None => None
-        };
-        Ok(recipe_details)
     }
 }
