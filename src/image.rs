@@ -16,12 +16,23 @@ pub fn handle_request(request: Request<Vec<u8>>, config: &Config) -> anyhow::Res
     }
 }
 
+// TODO Rewrite this route
 fn handle_get_request(request: &Request<Vec<u8>>, config: &Config) -> anyhow::Result<Response<Vec<u8>>> {
     let bad_get_strings = vec!["..", "$", "~"];
     for bad_string in bad_get_strings {
         if request.uri().path().contains(bad_string) {
             return Ok(bad_request_response())
         }
+    }
+
+    if request.uri() == "/image" || request.uri() == "/image/" {
+        let response = http::Response::builder()
+            .status(http::status::StatusCode::OK)
+            .header("Content-Length", 0)
+            // TODO Other format types
+            .header("Content-Type", "image/jpg")
+            .body(vec![])?;
+        return Ok(response)
     }
 
     let image_path = resolve_image_path(request.uri(), &config.image_folder)?;
