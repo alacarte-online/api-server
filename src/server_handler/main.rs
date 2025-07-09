@@ -89,7 +89,7 @@ fn handle_connection(stream: TcpStream, config: &Config, db_pool: &PgPool, auth:
 fn route_request(request: Request<Vec<u8>>, config: &Config, db_pool: &PgPool, auth: &Authorization) -> Response<Vec<u8>> {
     if image::can_handle_request(&request) {
         log::debug!("Routing request to image");
-        return image::handle_request(request, config)
+        return image::handle_request(request, config, auth)
     }
 
     if recipe::can_handle_request(&request) {

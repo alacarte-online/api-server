@@ -1,17 +1,26 @@
-use std::fs;
+mod post_image;
+
 use std::path::{Path, PathBuf};
 use http::{Method, Request, Response};
+use rand::Rng;
+use crate::authorization::Authorization;
 use crate::Config;
 use crate::http::responses;
+use crate::http::responses::unauthorized_response;
 
 pub fn can_handle_request(request: &Request<Vec<u8>>) -> bool {
-    request.uri().path().starts_with("/image/")
+    match *request.method() {
+        Method::GET => request.uri().path().starts_with("/image/"),
+        Method::POST => request.uri().path() == "/image",
+        _ => false,
+    }
+
 }
 
-pub fn handle_request(request: Request<Vec<u8>>, config: &Config) -> Response<Vec<u8>> {
+pub fn handle_request(request: Request<Vec<u8>>, config: &Config, auth_handler: &Authorization) -> Response<Vec<u8>> {
     match *request.method() {
         Method::GET => handle_get_request(&request, config),
-        // Method::PUT => handle_put_request(&request, config),
+        Method::POST => handle_post_request(&request, config, auth_handler),
         _ => responses::method_not_allowed_response()
     }
 }
@@ -33,7 +42,7 @@ fn handle_get_request(request: &Request<Vec<u8>>, config: &Config) -> Response<V
     }
 
     log::debug!("Loading image data");
-    let image_data = fs::read(image_path);
+    let image_data = std::fs::read(image_path);
     match image_data {
         Ok(image_data) => {
             log::debug!("Image data ok");
@@ -52,27 +61,16 @@ fn handle_get_request(request: &Request<Vec<u8>>, config: &Config) -> Response<V
     }
 }
 
-// fn handle_put_request(request: &Request<Vec<u8>>, config: &Config) -> anyhow::Result<Response<Vec<u8>>> {
-//     let image_path = resolve_image_path(request.uri(), &config.image_folder)?;
-//     let created = !image_path.exists();
-//
-//     if let Some(parent) = image_path.parent() {
-//         if !parent.exists() { fs::create_dir_all(parent)? }
-//     }
-//
-//     fs::write(image_path, request.body())?;
-//
-//     let response_status = match created {
-//         true => http::StatusCode::CREATED,
-//         false => http::StatusCode::NO_CONTENT
-//     };
-//
-//     let response = http::Response::builder()
-//         .status(response_status)
-//         .body(vec![])?;
-//
-//     Ok(response)
-// }
+fn handle_post_request(request: &Request<Vec<u8>>, config: &Config, auth_handler: &Authorization) -> Response<Vec<u8>> {
+    match auth_handler.authenticate_request(request) {
+        Ok(_) => (),
+        Err(_) => {
+            return unauthorized_response();
+        }
+    }
+
+    post_image::handle_post_request(request, config)
+}
 
 fn resolve_image_path(uri: &http::Uri, image_folder: &Path) -> PathBuf {
     let trim_length = "/image/".len();

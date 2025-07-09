@@ -8,6 +8,14 @@ pub fn empty_ok() -> Response<Vec<u8>> {
         .expect("error building response")
 }
 
+pub fn created(location: String) -> Response<Vec<u8>> {
+    http::Response::builder()
+        .status(http::status::StatusCode::CREATED)
+        .header(http::header::LOCATION, location)
+        .body(vec![])
+        .expect("error building response")
+}
+
 pub fn internal_server_error_response() -> Response<Vec<u8>> {
     http::Response::builder().status(http::status::StatusCode::INTERNAL_SERVER_ERROR).body(Vec::new()).expect("error building internal server error response")
 }
