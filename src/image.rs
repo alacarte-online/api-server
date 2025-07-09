@@ -37,7 +37,7 @@ fn handle_get_request(request: &Request<Vec<u8>>, config: &Config) -> anyhow::Re
 
     let image_path = resolve_image_path(request.uri(), &config.image_folder)?;
 
-    if !image_path.exists() {
+    if !image_path.exists() || !image_path.is_file() {
         return invalid_response(http::StatusCode::NOT_FOUND);
     }
 
