@@ -34,6 +34,18 @@ impl RecipeOverview {
         }
         Ok(recipe_vec)
     }
+
+    pub async fn get_recipe_overview(recipe_id: i64, db_pool: &PgPool) -> anyhow::Result<Option<RecipeOverview>> {
+        let recipe = sqlx::query_as!(RecipeOverviewViewItem,
+            "SELECT * FROM recipe_overviews WHERE recipe_id = $1;", recipe_id).fetch_optional(db_pool).await?;
+        match recipe {
+            Some(recipe) => {
+                let recipe = recipe.try_into()?;
+                Ok(Some(recipe))
+            },
+            None => Ok(None)
+        }
+    }
 }
 
 impl TryFrom<RecipeOverviewViewItem> for RecipeOverview {

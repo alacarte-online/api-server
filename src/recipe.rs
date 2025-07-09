@@ -2,6 +2,7 @@ mod get_recipe;
 mod get_all_recipes;
 mod database;
 mod post_recipe;
+mod put_recipe;
 
 use futures::executor::block_on;
 use crate::http::responses::{bad_request_response, internal_server_error_response, method_not_allowed_response, unauthorized_response};
@@ -18,11 +19,12 @@ pub fn handle_request(request: Request<Vec<u8>>, db_pool: &PgPool, auth_handler:
     match *request.method() {
         Method::GET => handle_get_request(&request, db_pool),
         Method::POST => handle_post_request(&request, db_pool, auth_handler),
+        Method::PUT => handle_put_request(&request, db_pool, auth_handler),
         _ => method_not_allowed_response()
     }
 }
 
-fn chunk_url(uri: &Uri) -> Vec<&str> {
+pub fn chunk_url(uri: &Uri) -> Vec<&str> {
     uri.path()[1..].split("/").filter(|chunk| !chunk.is_empty()).collect::<Vec<&str>>()
 }
 
@@ -65,6 +67,17 @@ fn handle_post_request(request: &Request<Vec<u8>>, db_pool: &PgPool, authorizati
         .header(http::header::LOCATION, recipe_location)
         .body(vec![])
         .expect("error building response")
+}
+
+fn handle_put_request(request: &Request<Vec<u8>>, db_pool: &PgPool, authorization: &Authorization) -> Response<Vec<u8>> {
+    match authorization.authenticate_request(request) {
+        Ok(_) => (),
+        Err(_) => {
+            return unauthorized_response();
+        }
+    }
+
+    block_on(put_recipe::handle_put_request(request, db_pool))
 }
 
 fn create_ok_response_from_json(json: String) -> Response<Vec<u8>> {
