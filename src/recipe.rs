@@ -39,6 +39,7 @@ fn handle_get_request(request: &Request<Vec<u8>>, db_pool: &PgPool) -> Response<
 fn handle_put_request(request: &Request<Vec<u8>>, db_pool: &PgPool, authorization: &Authorization) -> Response<Vec<u8>> {
     let url_chunks = chunk_url(request.uri());
     if url_chunks.len() != 1 {
+        log::info!("Bad request - PUT recipe request contained a sub-path");
         return bad_request_response()
     }
 
@@ -52,11 +53,17 @@ fn handle_put_request(request: &Request<Vec<u8>>, db_pool: &PgPool, authorizatio
     let handle_request_result = block_on(put_recipe::handle_put_request(request, db_pool));
     let put_recipe_response_data = match handle_request_result {
         Ok(response_data) => response_data,
-        Err(_) => { return bad_request_response() }
+        Err(err) => {
+            log::info!("Failed to handle put request: {}", err);
+            return bad_request_response()
+        }
     };
     let put_recipe_response_data = match serde_json::to_vec(&put_recipe_response_data) {
         Ok(response_data) => response_data,
-        Err(_) => { return internal_server_error_response() }
+        Err(err) => {
+            log::info!("Failed to handle serialize put response: {}", err);
+            return internal_server_error_response()
+        }
     };
 
     http::Response::builder().status(http::status::StatusCode::OK).body(put_recipe_response_data).expect("error building response")
