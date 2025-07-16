@@ -3,3 +3,4 @@ config.toml
 .idea/
 .env
 .auth
+images/
