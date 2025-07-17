@@ -8,6 +8,7 @@ use crate::recipe::database::IngredientToInsert;
 struct PostRecipeRequestData {
     pub recipe_name: String,
     pub brief_description: String,
+    pub image_uri: String,
     pub method: String,
     pub user_id: i64,
     pub ingredients: Vec<PostIngredientRequestData>,
@@ -72,7 +73,6 @@ async fn get_or_insert_ingredient_from_name(ingredient_name: &str, db_pool: &PgP
 }
 
 async fn insert_recipe(recipe: &PostRecipeRequestData, db_pool: &PgPool) -> anyhow::Result<i64> {
-    let image_uri = "";
     let inserted_recipe = sqlx::query!("INSERT INTO recipes
             (name, brief_description, method, image_uri, user_id)
             VALUES ($1, $2, $3, $4, $5)
@@ -80,7 +80,7 @@ async fn insert_recipe(recipe: &PostRecipeRequestData, db_pool: &PgPool) -> anyh
         recipe.recipe_name,
         recipe.brief_description,
         recipe.method,
-        image_uri,
+        recipe.image_uri,
         recipe.user_id)
         .fetch_one(db_pool).await?;
     Ok(inserted_recipe.id)
