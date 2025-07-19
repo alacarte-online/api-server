@@ -13,7 +13,6 @@ RUN rm src/server_handler/*.rs
 
 COPY src src
 COPY .sqlx .sqlx
-COPY images images
 COPY release-config.toml config.toml
 
 RUN rm target/release/deps/server_handler*
@@ -23,7 +22,6 @@ FROM debian:bullseye-slim
 EXPOSE 8001
 
 COPY --from=build /server_handler/target/release/server_handler .
-COPY --from=build /server_handler/images images
 COPY --from=build /server_handler/config.toml config.toml
 
 

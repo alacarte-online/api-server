@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM recipe_overviews WHERE recipe_id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "recipe_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "recipe_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "brief_description",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "image_uri",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "user_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "user_name",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "f85e0f07ea9c538ad70a712c7e136475456bffa8249605f1a1ccca53e7ed76fb"
+}

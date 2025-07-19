@@ -1,5 +1,6 @@
 address = "0.0.0.0:8030"
 image_folder = "images/"
+auth_file = "/run/secrets/AUTH_FILE"
 
 [database]
 name = { path = "/run/secrets/POSTGRES_DB" }
