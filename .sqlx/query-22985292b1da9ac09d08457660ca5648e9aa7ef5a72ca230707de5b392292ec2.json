@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE recipes\n            SET user_id = $1\n            WHERE id = $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "22985292b1da9ac09d08457660ca5648e9aa7ef5a72ca230707de5b392292ec2"
+}

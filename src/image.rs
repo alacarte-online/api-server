@@ -2,7 +2,6 @@ mod post_image;
 
 use std::path::{Path, PathBuf};
 use http::{Method, Request, Response};
-use rand::Rng;
 use crate::authorization::Authorization;
 use crate::Config;
 use crate::http::responses;
