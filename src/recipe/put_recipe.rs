@@ -7,7 +7,11 @@ use crate::recipe::database::recipe_overview;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct PutRecipeRequestData {
+    pub recipe_name: Option<String>,
+    pub brief_description: Option<String>,
     pub image_uri: Option<String>,
+    pub method: Option<String>,
+    pub user_id: Option<i64>,
 }
 
 pub async fn handle_put_request(request: &Request<Vec<u8>>, db_pool: &PgPool) -> Response<Vec<u8>> {
@@ -50,11 +54,51 @@ pub async fn handle_put_request(request: &Request<Vec<u8>>, db_pool: &PgPool) ->
         }
     };
 
+    if let Some(recipe_name) = put_recipe_request.recipe_name {
+        match update_recipe_name(recipe_id, &recipe_name, db_pool).await {
+            Ok(_) => (),
+            Err(err) => {
+                log::error!("Error updating recipe name for recipe {} - {}", recipe_id, err);
+                return responses::internal_server_error_response();
+            }
+        }
+    }
+
+    if let Some(brief_description) = put_recipe_request.brief_description {
+        match update_brief_description(recipe_id, &brief_description, db_pool).await {
+            Ok(_) => (),
+            Err(err) => {
+                log::error!("Error updating brief description for recipe {} - {}", recipe_id, err);
+                return responses::internal_server_error_response();
+            }
+        }
+    }
+
     if let Some(image_uri) = put_recipe_request.image_uri {
         match update_image_uri(recipe_id, &image_uri, db_pool).await {
             Ok(_) => (),
             Err(err) => {
                 log::error!("Error updating image uri for recipe {} - {}", recipe_id, err);
+                return responses::internal_server_error_response();
+            }
+        }
+    }
+
+    if let Some(recipe_method) = put_recipe_request.method {
+        match update_recipe_method(recipe_id, &recipe_method, db_pool).await {
+            Ok(_) => (),
+            Err(err) => {
+                log::error!("Error updating method for recipe {} - {}", recipe_id, err);
+                return responses::internal_server_error_response();
+            }
+        }
+    }
+
+    if let Some(user_id) = put_recipe_request.user_id {
+        match update_user_id(recipe_id, user_id, db_pool).await {
+            Ok(_) => (),
+            Err(err) => {
+                log::error!("Error updating user id for recipe {} - {}", recipe_id, err);
                 return responses::internal_server_error_response();
             }
         }
@@ -68,12 +112,72 @@ async fn recipe_with_id_exists(recipe_id: i64, db_pool: &PgPool) -> anyhow::Resu
     Ok(recipe.is_some())
 }
 
+async fn update_recipe_name(recipe_id: i64, recipe_name: &str, db_pool: &PgPool) -> anyhow::Result<()> {
+
+    let result = sqlx::query!("UPDATE recipes
+            SET name = $1
+            WHERE id = $2;",
+        recipe_name, recipe_id)
+        .execute(db_pool).await?;
+
+    if result.rows_affected() == 0 {
+        log::error!("Update image request for recipe {} updated 0 rows", recipe_id);
+    }
+
+    Ok(())
+}
+
+async fn update_brief_description(recipe_id: i64, brief_description: &str, db_pool: &PgPool) -> anyhow::Result<()> {
+
+    let result = sqlx::query!("UPDATE recipes
+            SET brief_description = $1
+            WHERE id = $2;",
+        brief_description, recipe_id)
+        .execute(db_pool).await?;
+
+    if result.rows_affected() == 0 {
+        log::error!("Update image request for recipe {} updated 0 rows", recipe_id);
+    }
+
+    Ok(())
+}
+
 async fn update_image_uri(recipe_id: i64, image_uri: &str, db_pool: &PgPool) -> anyhow::Result<()> {
 
     let result = sqlx::query!("UPDATE recipes
             SET image_uri = $1
             WHERE id = $2;",
         image_uri, recipe_id)
+        .execute(db_pool).await?;
+
+    if result.rows_affected() == 0 {
+        log::error!("Update image request for recipe {} updated 0 rows", recipe_id);
+    }
+
+    Ok(())
+}
+
+async fn update_recipe_method(recipe_id: i64, recipe_method: &str, db_pool: &PgPool) -> anyhow::Result<()> {
+
+    let result = sqlx::query!("UPDATE recipes
+            SET method = $1
+            WHERE id = $2;",
+        recipe_method, recipe_id)
+        .execute(db_pool).await?;
+
+    if result.rows_affected() == 0 {
+        log::error!("Update image request for recipe {} updated 0 rows", recipe_id);
+    }
+
+    Ok(())
+}
+
+async fn update_user_id(recipe_id: i64, user_id: i64, db_pool: &PgPool) -> anyhow::Result<()> {
+
+    let result = sqlx::query!("UPDATE recipes
+            SET user_id = $1
+            WHERE id = $2;",
+        user_id, recipe_id)
         .execute(db_pool).await?;
 
     if result.rows_affected() == 0 {
