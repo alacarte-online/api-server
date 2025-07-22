@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE recipes\n            SET brief_description = $1\n            WHERE id = $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "dc15f9b456fab8c84c5b942290c64d4469799f9b3513e9f948cb07b11ff79da3"
+}
