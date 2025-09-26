@@ -1,5 +1,5 @@
-use crate::http::responses::{bad_request_response, internal_server_error_response, not_found_response};
-use crate::recipe::{create_ok_response_from_json, database};
+use crate::http::responses::{bad_request_response, internal_server_error_response, json_ok, not_found_response};
+use crate::recipe::{database};
 use http::Response;
 use serde::Serialize;
 use sqlx::PgPool;
@@ -33,9 +33,8 @@ pub async fn get_recipe_with_id(db_pool: &PgPool, id: &str) -> Response<Vec<u8>>
         }
     };
 
-    create_ok_response_from_json(json)
+    json_ok(json)
 }
-
 
 #[derive(Debug, Serialize)]
 struct GetRecipeResponse {
@@ -43,7 +42,7 @@ struct GetRecipeResponse {
     pub recipe_name: String,
     pub brief_description: String,
     pub method: String,
-    pub image_uri: String,
+    pub image_uri: Option<String>,
     pub user_id: i64,
     pub user_name: String,
     pub ingredients: Vec<GetRecipeIngredientsResponse>

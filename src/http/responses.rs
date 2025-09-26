@@ -8,6 +8,18 @@ pub fn empty_ok() -> Response<Vec<u8>> {
         .expect("error building response")
 }
 
+pub fn json_ok(json: String) -> Response<Vec<u8>> {
+    let response = http::Response::builder()
+        .status(http::status::StatusCode::OK)
+        .header("Content-Length", json.len())
+        .header("Content-Type", "application/json")
+        .body(json.into_bytes());
+    response.unwrap_or_else(|err| {
+        println!("Error creating ok response from json: {}", err);
+        internal_server_error_response()
+    })
+}
+
 pub fn created(location: String) -> Response<Vec<u8>> {
     http::Response::builder()
         .status(http::status::StatusCode::CREATED)

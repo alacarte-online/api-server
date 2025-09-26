@@ -8,7 +8,7 @@ pub struct RecipeDetails {
     pub recipe_name: String,
     pub brief_description: String,
     pub method: String,
-    pub image_uri: String,
+    pub image_uri: Option<String>,
     pub user_id: i64,
     pub user_name: String,
 }
@@ -54,10 +54,7 @@ impl TryFrom<RecipeDetailsViewItem> for RecipeDetails {
             Some(method) => method,
             None => bail!("RecipeOverviewViewItem missing method"),
         };
-        let image_uri = match value.image_uri {
-            Some(image) => image,
-            None => bail!("RecipeOverviewViewItem missing image_uri"),
-        };
+        let image_uri = value.image_uri;
         let user_id = match value.user_id {
             Some(id) => id,
             None => bail!("RecipeOverviewViewItem missing user_id"),

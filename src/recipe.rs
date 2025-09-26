@@ -5,7 +5,7 @@ mod post_recipe;
 mod put_recipe;
 
 use futures::executor::block_on;
-use crate::http::responses::{bad_request_response, internal_server_error_response, method_not_allowed_response, unauthorized_response};
+use crate::http::responses::{bad_request_response, method_not_allowed_response, unauthorized_response};
 use crate::recipe::get_recipe::get_recipe_with_id;
 use http::{Method, Request, Response, Uri};
 use sqlx::PgPool;
@@ -78,16 +78,4 @@ fn handle_put_request(request: &Request<Vec<u8>>, db_pool: &PgPool, authorizatio
     }
 
     block_on(put_recipe::handle_put_request(request, db_pool))
-}
-
-fn create_ok_response_from_json(json: String) -> Response<Vec<u8>> {
-    let response = http::Response::builder()
-        .status(http::status::StatusCode::OK)
-        .header("Content-Length", json.len())
-        .header("Content-Type", "application/json")
-        .body(json.into_bytes());
-    response.unwrap_or_else(|err| {
-        println!("Error creating ok response from json: {}", err);
-        internal_server_error_response()
-    })
 }
