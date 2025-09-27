@@ -1,8 +1,6 @@
 use http::Request;
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
-use crate::recipe::database;
-use crate::recipe::database::IngredientToInsert;
+use sqlx::{PgPool, Postgres, Transaction};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct PostRecipeRequestData {
@@ -11,12 +9,12 @@ struct PostRecipeRequestData {
     pub image_uri: String,
     pub method: String,
     pub user_id: i64,
-    pub ingredients: Vec<PostIngredientRequestData>,
+    pub ingredients: Option<Vec<PostIngredientRequestData>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct PostIngredientRequestData {
-    pub ingredient_name: String,
+    pub ingredient_id: i64,
     pub amount: String,
 }
 
@@ -26,7 +24,8 @@ pub struct PostRecipeResponseData {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct PostIngredientIdAndAmount {
+struct RecipeIngredientData {
+    pub recipe_id: i64,
     pub ingredient_id: i64,
     pub amount: String,
 }
@@ -34,54 +33,59 @@ struct PostIngredientIdAndAmount {
 pub async fn handle_post_request(request: &Request<Vec<u8>>, db_pool: &PgPool) -> anyhow::Result<PostRecipeResponseData> {
     let put_recipe_request: PostRecipeRequestData = serde_json::from_slice(request.body())?;
 
-    let ingredient_ids_and_amounts = get_ingredient_ids_and_amounts(put_recipe_request.ingredients.clone(), db_pool).await?;
-    let recipe_id = insert_recipe(&put_recipe_request, db_pool).await?;
+    let mut tx = db_pool.begin().await?;
 
-    for ingredient_id_amount in ingredient_ids_and_amounts {
-        let ingredient_id = ingredient_id_amount.ingredient_id;
-        let amount = ingredient_id_amount.amount;
-        let recipe_ingredients = database::RecipeIngredientToInsert { recipe_id, ingredient_id, amount };
-        recipe_ingredients.insert_into_db(db_pool).await?;
-    }
+    // Add recipe to recipes table
+    let inserted_recipe_id = insert_recipe(&put_recipe_request, &mut tx).await?;
 
-    Ok(PostRecipeResponseData { recipe_id })
-}
-
-async fn get_ingredient_ids_and_amounts(put_ingredient_requests: Vec<PostIngredientRequestData>, db_pool: &PgPool) -> anyhow::Result<Vec<PostIngredientIdAndAmount>> {
-    let mut ids_and_amounts = vec![];
-    for put_ingredient_request in put_ingredient_requests.iter() {
-        let id = get_or_insert_ingredient_from_name(&put_ingredient_request.ingredient_name, db_pool).await?;
-        ids_and_amounts.push(PostIngredientIdAndAmount {ingredient_id: id, amount: put_ingredient_request.amount.clone()});
-    }
-    Ok(ids_and_amounts)
-}
-
-async fn get_or_insert_ingredient_from_name(ingredient_name: &str, db_pool: &PgPool) -> anyhow::Result<i64> {
-    let matching_ingredient = database::Ingredient::try_fetch_from_ingredient_name(db_pool, ingredient_name).await?;
-    match matching_ingredient {
-        Some(ingredient_details) => {
-            log::debug!("Id: {}", ingredient_details.id);
-            Ok(ingredient_details.id)
-        },
-        None => {
-            log::debug!("No ingredient found for {}", ingredient_name);
-            let ingredient_to_insert = IngredientToInsert { name: ingredient_name.to_string() };
-            let inserted_ingredient_id = ingredient_to_insert.insert_into_db(db_pool).await?;
-            Ok(inserted_ingredient_id)
+    if let Some(ingredients) = put_recipe_request.ingredients {
+        for ingredient in ingredients {
+            let recipe_ingredient_data = RecipeIngredientData {
+                recipe_id: inserted_recipe_id,
+                ingredient_id: ingredient.ingredient_id,
+                amount: ingredient.amount,
+            };
+            let _ = insert_ingredient_recipe(&recipe_ingredient_data, &mut tx).await?;
         }
     }
+
+    tx.commit().await?;
+
+    Ok(PostRecipeResponseData { recipe_id: inserted_recipe_id })
 }
 
-async fn insert_recipe(recipe: &PostRecipeRequestData, db_pool: &PgPool) -> anyhow::Result<i64> {
-    let inserted_recipe = sqlx::query!("INSERT INTO recipes
+#[derive(sqlx::FromRow)]
+struct InsertedRecipe {
+    id: i64
+}
+
+async fn insert_recipe(recipe: &PostRecipeRequestData, transaction: &mut Transaction<'_, Postgres>) -> anyhow::Result<i64> {
+    let inserted_recipe: InsertedRecipe = sqlx::query_as("INSERT INTO recipes
             (name, brief_description, method, image_uri, user_id)
             VALUES ($1, $2, $3, $4, $5)
-            RETURNING id;",
-        recipe.recipe_name,
-        recipe.brief_description,
-        recipe.method,
-        recipe.image_uri,
-        recipe.user_id)
-        .fetch_one(db_pool).await?;
+            RETURNING id;")
+        .bind(&recipe.recipe_name)
+        .bind(&recipe.brief_description)
+        .bind(&recipe.method)
+        .bind(&recipe.image_uri)
+        .bind(&recipe.user_id)
+        .fetch_one(&mut **transaction).await?;
     Ok(inserted_recipe.id)
+}
+
+#[derive(sqlx::FromRow)]
+struct InsertedRecipeIngredient {
+    id: i64
+}
+
+async fn insert_ingredient_recipe(recipe_ingredient_data: &RecipeIngredientData, transaction: &mut Transaction<'_, Postgres>) -> anyhow::Result<i64> {
+    let inserted_row: InsertedRecipeIngredient = sqlx::query_as("INSERT INTO recipe_ingredients
+            (recipe_id, ingredient_id, amount)
+            VALUES ($1, $2)
+            RETURNING id;")
+        .bind(&recipe_ingredient_data.recipe_id)
+        .bind(&recipe_ingredient_data.ingredient_id)
+        .bind(&recipe_ingredient_data.amount)
+        .fetch_one(&mut **transaction).await?;
+    Ok(inserted_row.id)
 }
