@@ -6,8 +6,8 @@ use sqlx::{PgPool, Postgres, Transaction};
 struct PostRecipeRequestData {
     pub recipe_name: String,
     pub brief_description: String,
-    pub image_uri: String,
-    pub method: String,
+    pub image_uri: Option<String>,
+    pub method: Option<String>,
     pub user_id: i64,
     pub ingredients: Option<Vec<PostIngredientRequestData>>,
 }

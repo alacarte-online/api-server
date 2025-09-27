@@ -7,7 +7,7 @@ pub struct RecipeDetails {
     pub recipe_id: i64,
     pub recipe_name: String,
     pub brief_description: String,
-    pub method: String,
+    pub method: Option<String>,
     pub image_uri: Option<String>,
     pub user_id: i64,
     pub user_name: String,
@@ -50,10 +50,7 @@ impl TryFrom<RecipeDetailsViewItem> for RecipeDetails {
             Some(description) => description,
             None => bail!("RecipeOverviewViewItem missing brief_description"),
         };
-        let method = match value.method {
-            Some(method) => method,
-            None => bail!("RecipeOverviewViewItem missing method"),
-        };
+        let method = value.method;
         let image_uri = value.image_uri;
         let user_id = match value.user_id {
             Some(id) => id,

@@ -55,8 +55,12 @@ impl TryFrom<RecipeIngredientsViewItem> for RecipeIngredientsView {
 }
 
 impl RecipeIngredientsView {
-    pub async fn fetch_from_recipe_id(db_pool: &PgPool, recipe_id: i64) -> anyhow::Result<Vec<Self>> {
+    pub async fn fetch_from_recipe_id(db_pool: &PgPool, recipe_id: i64) -> anyhow::Result<Option<Vec<Self>>> {
         let recipe_ingredients = sqlx::query_as!(RecipeIngredientsViewItem, "SELECT * FROM recipe_ingredients_list WHERE recipe_id = $1;", recipe_id).fetch_all(db_pool).await?;
+        if recipe_ingredients.len() == 0 {
+            return Ok(None);
+        }
+
         let mut recipe_ingredients_vec = vec![];
         for item in recipe_ingredients {
             match item.try_into() {
@@ -64,6 +68,6 @@ impl RecipeIngredientsView {
                 Err(err) => println!("{}", err)
             }
         }
-        Ok(recipe_ingredients_vec)
+        Ok(Some(recipe_ingredients_vec))
     }
 }

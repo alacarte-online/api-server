@@ -3,6 +3,7 @@ use crate::recipe::{database};
 use http::Response;
 use serde::Serialize;
 use sqlx::PgPool;
+use crate::recipe::database::RecipeIngredientsView;
 
 pub async fn get_recipe_with_id(db_pool: &PgPool, id: &str) -> Response<Vec<u8>> {
     let id = match id.parse::<i64>() {
@@ -41,15 +42,15 @@ struct GetRecipeResponse {
     pub recipe_id: i64,
     pub recipe_name: String,
     pub brief_description: String,
-    pub method: String,
+    pub method: Option<String>,
     pub image_uri: Option<String>,
     pub user_id: i64,
     pub user_name: String,
-    pub ingredients: Vec<GetRecipeIngredientsResponse>
+    pub ingredients: Option<Vec<GetRecipeIngredientsResponse>>
 }
 
 impl GetRecipeResponse {
-    pub fn from(recipe_details: database::RecipeDetails, ingredient_details: Vec<GetRecipeIngredientsResponse>) -> Self {
+    pub fn from(recipe_details: database::RecipeDetails, ingredient_details: Option<Vec<GetRecipeIngredientsResponse>>) -> Self {
         let recipe_id = recipe_details.recipe_id;
         let recipe_name = recipe_details.recipe_name;
         let brief_description = recipe_details.brief_description;
@@ -79,8 +80,7 @@ impl GetRecipeResponse {
         };
 
         let recipe_ingredients = database::RecipeIngredientsView::fetch_from_recipe_id(db_pool, recipe_id).await?;
-
-        let ingredient_details = recipe_ingredients.into_iter().map(GetRecipeIngredientsResponse::from).collect::<Vec<GetRecipeIngredientsResponse>>();
+        let ingredient_details = recipe_ingredients.map(|details| details.into_iter().map(GetRecipeIngredientsResponse::from).collect());
         Ok(Some(Self::from(recipe_details, ingredient_details)))
     }
 }
@@ -92,8 +92,8 @@ struct GetRecipeIngredientsResponse {
     pub amount: String
 }
 
-impl From<database::RecipeIngredientsView> for GetRecipeIngredientsResponse {
-    fn from(recipe_ingredients: database::RecipeIngredientsView) -> Self {
+impl From<RecipeIngredientsView> for GetRecipeIngredientsResponse {
+    fn from(recipe_ingredients: RecipeIngredientsView) -> Self {
         let ingredient_id = recipe_ingredients.ingredient_id;
         let ingredient_name = recipe_ingredients.ingredient_name;
         let amount = recipe_ingredients.amount;
