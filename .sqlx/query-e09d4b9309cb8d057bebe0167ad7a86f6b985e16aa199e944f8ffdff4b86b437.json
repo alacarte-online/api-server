@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM ingredients WHERE name = $1;",
+  "query": "SELECT id, name FROM ingredients;",
   "describe": {
     "columns": [
       {
@@ -15,14 +15,12 @@
       }
     ],
     "parameters": {
-      "Left": [
-        "Text"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
       false
     ]
   },
-  "hash": "4e8ec1b8a02a5e976643ede856a2f0b2b67e5b4534e75b56ab3308d6fcd5ba44"
+  "hash": "e09d4b9309cb8d057bebe0167ad7a86f6b985e16aa199e944f8ffdff4b86b437"
 }
