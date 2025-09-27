@@ -1,6 +1,6 @@
 use anyhow::{bail, Result};
 use backend::http::HttpCodec;
-use backend::{image, recipe};
+use backend::{image, ingredient, recipe};
 use backend::{Config, ConfigFile};
 use clap::Parser;
 use http::{Request, Response};
@@ -95,6 +95,11 @@ fn route_request(request: Request<Vec<u8>>, config: &Config, db_pool: &PgPool, a
     if recipe::can_handle_request(&request) {
         log::debug!("Routing request to recipe");
         return recipe::handle_request(request, db_pool, auth)
+    }
+
+    if ingredient::can_handle_request(&request) {
+        log::debug!("Routing request to ingredient");
+        return ingredient::handle_request(request, db_pool, auth)
     }
 
     log::info!("No valid route for request '{}'", request.uri());
