@@ -19,7 +19,7 @@ jobs:
         - name: Checkout
           uses: actions/checkout@v5
           with:
-            fetch-tags: true
+            fetch-depth: 0 # We need all tags - which apparently requires fetching all commits too
         - name: Determine new version
           id: version
           env:
