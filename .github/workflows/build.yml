@@ -31,6 +31,7 @@ jobs:
               exit 1
             fi
             echo "new_version=$version" >> $GITHUB_OUTPUT
+            echo "last_version=$version" >> $GITHUB_OUTPUT
         - name: Login to Docker Hub
           uses: docker/login-action@v3
           with:
@@ -43,10 +44,11 @@ jobs:
           env:
             image_name: smithtom6304/alacarte-backend
             image_version: ${{ steps.version.outputs.new_version }}
+            last_image_version: ${{ steps.version.outputs.last_version }}
           with:
             push: true
             tags: "${{ env.image_name }}:${{ env.image_version }}"
-            cache-from: "type=registry,ref=${{ env.image_name }}:${{ env.image_version }}"
+            cache-from: "type=registry,ref=${{ env.image_name }}:${{ env.last_image_version }}"
             cache-to: type=inline
         - name: Create tag
           env:
