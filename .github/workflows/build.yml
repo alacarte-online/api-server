@@ -46,7 +46,9 @@ jobs:
             image_version: ${{ steps.version.outputs.new_version }}
           with:
             push: true
-            tags: ${{ env.image_name }}:${{ env.image_version }}
+            tags: "${{ env.image_name }}:${{ env.image_version }}"
+            cache-from: "type=registry,ref=${{ env.image_name }}:${{ env.image_version }}"
+            cache-to: type=inline
         - name: Create tag
           env:
             version: ${{ steps.version.outputs.new_version }}
