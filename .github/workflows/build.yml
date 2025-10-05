@@ -24,7 +24,7 @@ jobs:
           env:
             bump_type: ${{ inputs.release_type }}
           run: |
-            highest_version_tag=$(git tag -l *.*.* --sort=-v:refname | head -n 1)
+            highest_version_tag=$(git tag -l "*.*.*" --sort=-v:refname | head -n 1)
             echo "last_version=$highest_version_tag" >> $GITHUB_OUTPUT
         - name: Determine new version
           id: new_version
